@@ -17,6 +17,10 @@ class HUD:
         if not team:
             return
 
+        font_med = self.game.fonts.get("medium_bold", self.game.fonts.get("medium"))
+        font_small = self.game.fonts.get("small_bold", self.game.fonts.get("small"))
+        font_regular = self.game.fonts.get("small", self.game.fonts["small"])
+
         # Map name
         map_names = {
             "vila": "Vila Raiz",
@@ -25,7 +29,7 @@ class HUD:
             "arena": "Arena Final",
         }
         map_name = map_names.get(current_map_name, current_map_name)
-        name_surf = self.game.fonts["medium"].render(map_name, True, UI_HIGHLIGHT)
+        name_surf = font_med.render(map_name, True, UI_HIGHLIGHT)
         name_bg = pygame.Surface((name_surf.get_width() + 24, 34), pygame.SRCALPHA)
         pygame.draw.rect(name_bg, (*UI_BG, 220), (0, 0, name_bg.get_width(), 34), border_radius=6)
         pygame.draw.rect(name_bg, UI_BORDER, (0, 0, name_bg.get_width(), 34), 2, border_radius=6)
@@ -34,8 +38,8 @@ class HUD:
 
         # Team mini display
         for i, monster in enumerate(team):
-            x = 15 + i * 35
-            y = 55
+            x = 15 + i * 36
+            y = 56
 
             # Mini HP indicator (colored circle)
             hp_ratio = monster.current_hp / monster.max_hp if monster.max_hp > 0 else 0
@@ -48,7 +52,7 @@ class HUD:
             else:
                 color = HP_RED
                 border = (255, 120, 120)
-            
+
             if monster.is_fainted():
                 color = (50, 50, 60)
                 border = MID_GRAY
@@ -63,18 +67,28 @@ class HUD:
             pygame.draw.circle(screen, border, (x + 12, y + 12), 10, 2)
             pygame.draw.circle(screen, (255, 255, 255, 150), (x + 8, y + 8), 3)
 
-        # Player Level and Title
+        # Player Level, Title & Badges
         level = player_data.get("player_level", 1)
         title = player_data.get("player_title", "Aprendiz")
-        player_text = f"Nv. {level} - {title}"
-        p_surf = self.game.fonts["small"].render(player_text, True, UI_TEXT)
+        badges = player_data.get("progress", {}).get("badges", 0)
+        badge_text = f"  ★ {badges}" if badges > 0 else ""
+        player_text = f"Nv. {level} - {title}{badge_text}"
+
+        p_surf = font_small.render(player_text, True, UI_TEXT)
         p_bg = pygame.Surface((p_surf.get_width() + 20, 28), pygame.SRCALPHA)
         pygame.draw.rect(p_bg, (*UI_BG, 220), (0, 0, p_bg.get_width(), 28), border_radius=6)
         pygame.draw.rect(p_bg, UI_BORDER, (0, 0, p_bg.get_width(), 28), 1, border_radius=6)
         screen.blit(p_bg, (SCREEN_WIDTH - p_bg.get_width() - 15, 15))
         screen.blit(p_surf, (SCREEN_WIDTH - p_bg.get_width() - 5, 20))
 
-        # Controls hint
-        hint = self.game.fonts["small"].render("Z: Interagir | X: Menu | Setas: Mover", True,
-                                                 (*UI_TEXT, 120))
-        screen.blit(hint, (SCREEN_WIDTH // 2 - hint.get_width() // 2, SCREEN_HEIGHT - 22))
+        # Controls hint bar with backdrop for clear readability
+        hint_text = "WASD/Setas: Mover  |  Z/Enter: Interagir  |  X/Esc: Menu"
+        hint = font_regular.render(hint_text, True, (215, 220, 235))
+        hint_bg = pygame.Surface((hint.get_width() + 18, 22), pygame.SRCALPHA)
+        pygame.draw.rect(hint_bg, (15, 18, 28, 180), (0, 0, hint_bg.get_width(), 22), border_radius=5)
+        pygame.draw.rect(hint_bg, (50, 60, 85, 180), (0, 0, hint_bg.get_width(), 22), 1, border_radius=5)
+
+        hint_x = SCREEN_WIDTH // 2 - hint_bg.get_width() // 2
+        hint_y = SCREEN_HEIGHT - 26
+        screen.blit(hint_bg, (hint_x, hint_y))
+        screen.blit(hint, (hint_x + 9, hint_y + 3))
