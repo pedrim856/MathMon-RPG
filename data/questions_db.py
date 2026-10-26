@@ -105,8 +105,8 @@ class QuestionGenerator:
                 answer = final
 
         else:
-            # Hard multi-step
-            choice = random.randint(0, 2)
+            # Hard multi-step and powers
+            choice = random.randint(0, 3)
             if choice == 0:
                 a = random.randint(10, 50)
                 b = random.randint(10, 50)
@@ -117,10 +117,15 @@ class QuestionGenerator:
                 a = random.randint(5, 20)
                 answer = a * a
                 question = f"{a}² = ?"
+            elif choice == 2:
+                # Perfect square roots
+                roots = [4, 9, 16, 25, 36, 49, 64, 81, 100, 121, 144, 169, 196, 225]
+                sq = random.choice(roots)
+                answer = int(math_module.isqrt(sq))
+                question = f"√{sq} = ?"
             else:
                 a = random.randint(15, 99)
                 b = random.randint(15, 99)
-                c = random.randint(2, 8)
                 answer = a * b
                 question = f"{a} × {b} = ?"
 
@@ -131,8 +136,9 @@ class QuestionGenerator:
         return {
             "question": question,
             "answer": str(answer),
+            "options": options,
             "timer": timer,
-            "type": "input",  # input = type answer
+            "type": "input",  # input = multiple choice / direct input
         }
 
     @staticmethod
@@ -189,6 +195,7 @@ class QuestionGenerator:
         return {
             "question": question,
             "answer": str(answer),
+            "options": options,
             "timer": timer,
             "type": "input",
         }
@@ -326,6 +333,7 @@ class QuestionGenerator:
         return {
             "question": question,
             "answer": str(answer),
+            "options": options,
             "timer": timer,
             "type": "input",
         }
