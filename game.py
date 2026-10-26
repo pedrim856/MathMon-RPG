@@ -25,14 +25,36 @@ class Game:
         self._load_fonts()
 
     def _load_fonts(self):
-        """Load game fonts."""
-        self.fonts = {
-            "small": pygame.font.Font(None, 20),
-            "medium": pygame.font.Font(None, 28),
-            "large": pygame.font.Font(None, 36),
-            "title": pygame.font.Font(None, 56),
-            "huge": pygame.font.Font(None, 72),
-        }
+        """Load game fonts with preferred modern system font."""
+        available = pygame.font.get_fonts()
+        font_name = None
+        for name in ["segoeui", "arial", "trebuchetms", "verdana", "dejavusans"]:
+            if name in available:
+                font_name = name
+                break
+
+        if font_name:
+            self.fonts = {
+                "tiny": pygame.font.SysFont(font_name, 16),
+                "small": pygame.font.SysFont(font_name, 20),
+                "small_bold": pygame.font.SysFont(font_name, 20, bold=True),
+                "medium": pygame.font.SysFont(font_name, 26),
+                "medium_bold": pygame.font.SysFont(font_name, 26, bold=True),
+                "large": pygame.font.SysFont(font_name, 34, bold=True),
+                "title": pygame.font.SysFont(font_name, 48, bold=True),
+                "huge": pygame.font.SysFont(font_name, 64, bold=True),
+            }
+        else:
+            self.fonts = {
+                "tiny": pygame.font.Font(None, 18),
+                "small": pygame.font.Font(None, 22),
+                "small_bold": pygame.font.Font(None, 22),
+                "medium": pygame.font.Font(None, 28),
+                "medium_bold": pygame.font.Font(None, 28),
+                "large": pygame.font.Font(None, 36),
+                "title": pygame.font.Font(None, 56),
+                "huge": pygame.font.Font(None, 72),
+            }
 
     def register_state(self, name, state):
         """Register a game state."""
