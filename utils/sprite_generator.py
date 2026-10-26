@@ -400,6 +400,11 @@ class SpriteGenerator:
             "sparkz": self._draw_sparkz,
             "voltiger": self._draw_voltiger,
             "thundrex": self._draw_thundrex,
+            # Extra monsters (falling back to similar sprites for now)
+            "terrox": self._draw_vineclaw,
+            "glaciux": self._draw_tsunark,
+            "logix": self._draw_sparkz,
+            "chaos": self._draw_ignidor,
         }
 
         draw_func = monsters.get(monster_id, self._draw_flamix)
