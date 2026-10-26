@@ -74,119 +74,232 @@ class BattleState(GameState):
         state = self.engine.state
 
         for event in events:
-            if event.type != pygame.KEYDOWN:
-                continue
+            # ─── MOUSE HOVER / MOTION ───
+            if event.type == pygame.MOUSEMOTION:
+                m_pos = event.pos
+                if state == BSTATE_PLAYER_TURN:
+                    act_idx = self.ui.get_action_at_pos(m_pos)
+                    if act_idx is not None and act_idx != self.selected_action:
+                        self.selected_action = act_idx
+                        self.sound.play("menu_select")
+                elif state == BSTATE_MOVE_SELECT:
+                    move_idx = self.ui.get_move_at_pos(m_pos)
+                    if move_idx is not None and move_idx != self.selected_move:
+                        moves = self.engine.get_player_moves()
+                        if 0 <= move_idx < len(moves):
+                            self.selected_move = move_idx
+                            self.sound.play("menu_select")
+                elif state == BSTATE_CHALLENGE:
+                    opt_idx = self.ui.get_option_at_pos(m_pos)
+                    if opt_idx is not None and opt_idx != self.selected_option:
+                        self.selected_option = opt_idx
+                        self.sound.play("menu_select")
+                elif state == BSTATE_ITEM_SELECT:
+                    item_idx = self.ui.get_item_at_pos(m_pos)
+                    if item_idx is not None and item_idx != self.selected_item:
+                        self.selected_item = item_idx
+                        self.sound.play("menu_select")
 
-            if state == BSTATE_INTRO:
-                if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+            # ─── MOUSE CLICKS ───
+            elif event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                m_pos = event.pos
+                if state == BSTATE_INTRO:
                     self.engine.advance_intro()
                     self.sound.play("menu_confirm")
-
-            elif state == BSTATE_PLAYER_TURN:
-                if event.key in (pygame.K_UP, pygame.K_w):
-                    self.selected_action = (self.selected_action - 2) % 4
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_DOWN, pygame.K_s):
-                    self.selected_action = (self.selected_action + 2) % 4
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_LEFT, pygame.K_a):
-                    self.selected_action = (self.selected_action - 1) % 4
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                    self.selected_action = (self.selected_action + 1) % 4
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_RETURN, pygame.K_z):
-                    actions = ["attack", "defend", "item", "run"]
-                    self.engine.select_action(actions[self.selected_action])
-                    self.sound.play("menu_confirm")
-                    if self.engine.state == BSTATE_MOVE_SELECT:
-                        self.selected_move = 0
-
-            elif state == BSTATE_MOVE_SELECT:
-                moves = self.engine.get_player_moves()
-                if event.key in (pygame.K_UP, pygame.K_w):
-                    self.selected_move = (self.selected_move - 2) % len(moves)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_DOWN, pygame.K_s):
-                    self.selected_move = (self.selected_move + 2) % len(moves)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_LEFT, pygame.K_a):
-                    self.selected_move = (self.selected_move - 1) % len(moves)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_RIGHT, pygame.K_d):
-                    self.selected_move = (self.selected_move + 1) % len(moves)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_RETURN, pygame.K_z):
-                    self.engine.select_move(self.selected_move)
-                    self.sound.play("menu_confirm")
-                    if self.engine.state == BSTATE_CHALLENGE:
-                        self.answer_text = ""
-                        self.selected_option = 0
-                        ch = self.engine.current_challenge
-                        if ch["type"].startswith("memory"):
-                            self.memory_phase = "show"
-                            self.memory_show_index = 0
-                            self.memory_show_timer = 0
-                            self.memory_input = []
-                        else:
-                            self.timer_warned = False
-                elif event.key == pygame.K_ESCAPE:
-                    self.engine.state = BSTATE_PLAYER_TURN
-                    self.sound.play("menu_back")
-
-            elif state == BSTATE_CHALLENGE:
-                ch = self.engine.current_challenge
-                if ch["type"] == "input":
-                    self._handle_challenge_input(event)
-                elif ch["type"].startswith("memory"):
-                    self._handle_memory_input(event)
-
-            elif state == BSTATE_ITEM_SELECT:
-                items = BATTLE_ITEMS
-                usable = [i for i in items
-                          if self.game.player_data.get("inventory", {}).get(i, 0) > 0]
-                if event.key in (pygame.K_UP, pygame.K_w):
-                    self.selected_item = max(0, self.selected_item - 1)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_DOWN, pygame.K_s):
-                    self.selected_item = min(max(0, len(items) - 1),
-                                             self.selected_item + 1)
-                    self.sound.play("menu_select")
-                elif event.key in (pygame.K_RETURN, pygame.K_z):
-                    if 0 <= self.selected_item < len(items):
-                        item = items[self.selected_item]
-                        inv = self.game.player_data.get("inventory", {})
-                        if inv.get(item, 0) > 0:
-                            self.engine.use_item(item)
-                            inv[item] -= 1
-                            self.sound.play("correct")
-                        else:
-                            self.engine.messages = ["Você não tem esse item!"]
-                            self.engine.state = BSTATE_PLAYER_TURN
-                elif event.key == pygame.K_ESCAPE:
-                    self.engine.state = BSTATE_PLAYER_TURN
-                    self.sound.play("menu_back")
-
-            elif state == BSTATE_PLAYER_RESULT:
-                if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                elif state == BSTATE_PLAYER_TURN:
+                    act_idx = self.ui.get_action_at_pos(m_pos)
+                    if act_idx is not None:
+                        self.selected_action = act_idx
+                        actions = ["attack", "defend", "item", "run"]
+                        self.engine.select_action(actions[self.selected_action])
+                        self.sound.play("menu_confirm")
+                        if self.engine.state == BSTATE_MOVE_SELECT:
+                            self.selected_move = 0
+                elif state == BSTATE_MOVE_SELECT:
+                    if self.ui.is_back_button_clicked(m_pos):
+                        self.engine.state = BSTATE_PLAYER_TURN
+                        self.sound.play("menu_back")
+                    else:
+                        move_idx = self.ui.get_move_at_pos(m_pos)
+                        moves = self.engine.get_player_moves()
+                        if move_idx is not None and 0 <= move_idx < len(moves):
+                            self.selected_move = move_idx
+                            self.engine.select_move(self.selected_move)
+                            self.sound.play("menu_confirm")
+                            if self.engine.state == BSTATE_CHALLENGE:
+                                self.answer_text = ""
+                                self.selected_option = 0
+                                ch = self.engine.current_challenge
+                                if ch["type"].startswith("memory"):
+                                    self.memory_phase = "show"
+                                    self.memory_show_index = 0
+                                    self.memory_show_timer = 0
+                                    self.memory_input = []
+                                else:
+                                    self.timer_warned = False
+                elif state == BSTATE_CHALLENGE:
+                    opt_idx = self.ui.get_option_at_pos(m_pos)
+                    options = self.engine.current_challenge.get("options", [])
+                    if opt_idx is not None and 0 <= opt_idx < len(options):
+                        self.selected_option = opt_idx
+                        self._submit_answer(str(options[opt_idx]))
+                elif state == BSTATE_ITEM_SELECT:
+                    if self.ui.is_back_button_clicked(m_pos):
+                        self.engine.state = BSTATE_PLAYER_TURN
+                        self.sound.play("menu_back")
+                    else:
+                        item_idx = self.ui.get_item_at_pos(m_pos)
+                        items = BATTLE_ITEMS
+                        if item_idx is not None and 0 <= item_idx < len(items):
+                            self.selected_item = item_idx
+                            item = items[self.selected_item]
+                            inv = self.game.player_data.get("inventory", {})
+                            if inv.get(item, 0) > 0:
+                                self.engine.use_item(item)
+                                inv[item] -= 1
+                                self.sound.play("correct")
+                            else:
+                                self.engine.messages = ["Você não tem esse item!"]
+                                self.engine.state = BSTATE_PLAYER_TURN
+                elif state == BSTATE_PLAYER_RESULT:
                     self.engine.advance_result()
-
-            elif state == BSTATE_ENEMY_RESULT:
-                if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                elif state == BSTATE_ENEMY_RESULT:
                     self.engine.advance_enemy_result()
-
-            elif state in (BSTATE_VICTORY, BSTATE_DEFEAT, BSTATE_RUN):
-                if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                elif state in (BSTATE_VICTORY, BSTATE_DEFEAT, BSTATE_RUN):
                     if self.engine.messages:
                         self.engine.messages.pop(0)
                     else:
                         self._end_battle()
+
+            # ─── KEYBOARD INPUT ───
+            elif event.type == pygame.KEYDOWN:
+                if state == BSTATE_INTRO:
+                    if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                        self.engine.advance_intro()
+                        self.sound.play("menu_confirm")
+
+                elif state == BSTATE_PLAYER_TURN:
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        self.selected_action = (self.selected_action - 2) % 4
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.selected_action = (self.selected_action + 2) % 4
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_LEFT, pygame.K_a):
+                        self.selected_action = (self.selected_action - 1) % 4
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                        self.selected_action = (self.selected_action + 1) % 4
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_RETURN, pygame.K_z):
+                        actions = ["attack", "defend", "item", "run"]
+                        self.engine.select_action(actions[self.selected_action])
+                        self.sound.play("menu_confirm")
+                        if self.engine.state == BSTATE_MOVE_SELECT:
+                            self.selected_move = 0
+
+                elif state == BSTATE_MOVE_SELECT:
+                    moves = self.engine.get_player_moves()
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        self.selected_move = (self.selected_move - 2) % len(moves)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.selected_move = (self.selected_move + 2) % len(moves)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_LEFT, pygame.K_a):
+                        self.selected_move = (self.selected_move - 1) % len(moves)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_RIGHT, pygame.K_d):
+                        self.selected_move = (self.selected_move + 1) % len(moves)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_RETURN, pygame.K_z):
+                        self.engine.select_move(self.selected_move)
+                        self.sound.play("menu_confirm")
+                        if self.engine.state == BSTATE_CHALLENGE:
+                            self.answer_text = ""
+                            self.selected_option = 0
+                            ch = self.engine.current_challenge
+                            if ch["type"].startswith("memory"):
+                                self.memory_phase = "show"
+                                self.memory_show_index = 0
+                                self.memory_show_timer = 0
+                                self.memory_input = []
+                            else:
+                                self.timer_warned = False
+                    elif event.key in (pygame.K_ESCAPE, pygame.K_x):
+                        self.engine.state = BSTATE_PLAYER_TURN
+                        self.sound.play("menu_back")
+
+                elif state == BSTATE_CHALLENGE:
+                    ch = self.engine.current_challenge
+                    if ch["type"] == "input":
+                        self._handle_challenge_input(event)
+                    elif ch["type"].startswith("memory"):
+                        self._handle_memory_input(event)
+
+                elif state == BSTATE_ITEM_SELECT:
+                    items = BATTLE_ITEMS
+                    if event.key in (pygame.K_UP, pygame.K_w):
+                        self.selected_item = max(0, self.selected_item - 1)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_DOWN, pygame.K_s):
+                        self.selected_item = min(max(0, len(items) - 1),
+                                                 self.selected_item + 1)
+                        self.sound.play("menu_select")
+                    elif event.key in (pygame.K_RETURN, pygame.K_z):
+                        if 0 <= self.selected_item < len(items):
+                            item = items[self.selected_item]
+                            inv = self.game.player_data.get("inventory", {})
+                            if inv.get(item, 0) > 0:
+                                self.engine.use_item(item)
+                                inv[item] -= 1
+                                self.sound.play("correct")
+                            else:
+                                self.engine.messages = ["Você não tem esse item!"]
+                                self.engine.state = BSTATE_PLAYER_TURN
+                    elif event.key in (pygame.K_ESCAPE, pygame.K_x):
+                        self.engine.state = BSTATE_PLAYER_TURN
+                        self.sound.play("menu_back")
+
+                elif state == BSTATE_PLAYER_RESULT:
+                    if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                        self.engine.advance_result()
+
+                elif state == BSTATE_ENEMY_RESULT:
+                    if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                        self.engine.advance_enemy_result()
+
+                elif state in (BSTATE_VICTORY, BSTATE_DEFEAT, BSTATE_RUN):
+                    if event.key in (pygame.K_RETURN, pygame.K_z, pygame.K_SPACE):
+                        if self.engine.messages:
+                            self.engine.messages.pop(0)
+                        else:
+                            self._end_battle()
 
     # ─── Challenge input ────────────────────────────────────────────
 
     def _handle_challenge_input(self, event):
         """Handle keyboard input for math/equation/logic challenges."""
         options = self.engine.current_challenge.get("options", [])
+
+        # Number key direct option selection (1-4)
+        if options:
+            if event.key in (pygame.K_1, pygame.K_KP1):
+                self.selected_option = 0
+                self.sound.play("menu_select")
+                return
+            elif event.key in (pygame.K_2, pygame.K_KP2) and len(options) > 1:
+                self.selected_option = 1
+                self.sound.play("menu_select")
+                return
+            elif event.key in (pygame.K_3, pygame.K_KP3) and len(options) > 2:
+                self.selected_option = 2
+                self.sound.play("menu_select")
+                return
+            elif event.key in (pygame.K_4, pygame.K_KP4) and len(options) > 3:
+                self.selected_option = 3
+                self.sound.play("menu_select")
+                return
 
         if event.key in (pygame.K_RETURN, pygame.K_z):
             if options and 0 <= self.selected_option < len(options):
@@ -195,11 +308,11 @@ class BattleState(GameState):
                 submitted = self.answer_text
             self._submit_answer(submitted)
 
-        elif event.key == pygame.K_LEFT:
+        elif event.key in (pygame.K_LEFT, pygame.K_a):
             if options:
                 self.selected_option = (self.selected_option - 1) % len(options)
                 self.sound.play("menu_select")
-        elif event.key == pygame.K_RIGHT:
+        elif event.key in (pygame.K_RIGHT, pygame.K_d):
             if options:
                 self.selected_option = (self.selected_option + 1) % len(options)
                 self.sound.play("menu_select")
