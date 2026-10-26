@@ -1,15 +1,32 @@
 # MathMon RPG - Save System
 import json
 import os
+import shutil
 from settings import SAVE_FILE
+
+BACKUP_SAVE_FILE = SAVE_FILE.replace(".json", "_backup.json")
+TMP_SAVE_FILE = SAVE_FILE.replace(".json", ".tmp")
 
 
 class SaveSystem:
-    """Handles saving and loading game progress."""
+    """Handles robust saving, loading, backup, and recovery of game progress."""
+
+    @staticmethod
+    def validate_save_data(data):
+        """Validate that save structure contains all essential fields."""
+        if not isinstance(data, dict):
+            return False
+        required_keys = {"player", "team", "inventory", "progress"}
+        if not required_keys.issubset(data.keys()):
+            return False
+        player = data.get("player", {})
+        if not isinstance(player, dict) or "current_map" not in player:
+            return False
+        return True
 
     @staticmethod
     def save_game(player_data):
-        """Save game data to JSON file."""
+        """Save game data atomically with backup creation."""
         save_data = {
             "player": {
                 "name": player_data.get("name", "Jogador"),
@@ -41,32 +58,64 @@ class SaveSystem:
             save_data["team"].append(mon_data)
 
         try:
-            with open(SAVE_FILE, 'w', encoding='utf-8') as f:
+            # 1. Create a backup of existing valid save
+            if os.path.exists(SAVE_FILE):
+                try:
+                    shutil.copy2(SAVE_FILE, BACKUP_SAVE_FILE)
+                except Exception:
+                    pass
+
+            # 2. Atomic write via temporary file
+            with open(TMP_SAVE_FILE, "w", encoding="utf-8") as f:
                 json.dump(save_data, f, ensure_ascii=False, indent=2)
+
+            os.replace(TMP_SAVE_FILE, SAVE_FILE)
             return True
         except Exception as e:
             print(f"Erro ao salvar: {e}")
+            if os.path.exists(TMP_SAVE_FILE):
+                try:
+                    os.remove(TMP_SAVE_FILE)
+                except Exception:
+                    pass
             return False
 
     @staticmethod
     def load_game():
-        """Load game data from JSON file."""
-        if not os.path.exists(SAVE_FILE):
-            return None
-        try:
-            with open(SAVE_FILE, 'r', encoding='utf-8') as f:
-                return json.load(f)
-        except Exception as e:
-            print(f"Erro ao carregar: {e}")
-            return None
+        """Load game data from JSON file with automatic fallback to backup."""
+        # Try primary save file first
+        if os.path.exists(SAVE_FILE):
+            try:
+                with open(SAVE_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if SaveSystem.validate_save_data(data):
+                    return data
+            except Exception as e:
+                print(f"Erro ao carregar save principal, tentando backup: {e}")
+
+        # Fallback to backup save file
+        if os.path.exists(BACKUP_SAVE_FILE):
+            try:
+                with open(BACKUP_SAVE_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                if SaveSystem.validate_save_data(data):
+                    return data
+            except Exception as e:
+                print(f"Erro ao carregar backup: {e}")
+
+        return None
 
     @staticmethod
     def has_save():
-        """Check if a save file exists."""
-        return os.path.exists(SAVE_FILE)
+        """Check if a valid save or backup file exists."""
+        return os.path.exists(SAVE_FILE) or os.path.exists(BACKUP_SAVE_FILE)
 
     @staticmethod
     def delete_save():
-        """Delete save file."""
-        if os.path.exists(SAVE_FILE):
-            os.remove(SAVE_FILE)
+        """Delete save and backup files."""
+        for path in (SAVE_FILE, BACKUP_SAVE_FILE, TMP_SAVE_FILE):
+            if os.path.exists(path):
+                try:
+                    os.remove(path)
+                except Exception:
+                    pass
