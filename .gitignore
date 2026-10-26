@@ -1,4 +1,29 @@
+# Byte-compiled / optimized / DLL files
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+
+# Game saves
 save_data.json
+save_data_backup.json
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Operating System files
 .DS_Store
+Thumbs.db
